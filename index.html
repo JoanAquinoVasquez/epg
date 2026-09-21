@@ -339,7 +339,7 @@ const DEFAULTS = {
       "En esta galaxia infinita llena de estrellas y girasoles, quería dedicarte este rinconcito para recordarte lo valiosa que es tu presencia y lo mucho que iluminas el día de quienes te rodean.",
       "Que nunca te falten motivos para sonreír y que la vida siempre te devuelva todo el brillo, el cariño y la felicidad que das al mundo."
     ],
-    firma: "Con todo mi cariño ✨"
+    firma: "Con todo mi cariño,\nJoan Aquino 💛"
   }
 };
 const CONFIG=(window.DEDICA&&window.DEDICA.merge)?window.DEDICA.merge(DEFAULTS,window.DEDICA.config):DEFAULTS;
@@ -645,7 +645,7 @@ const cartaConfig=CONFIG.carta||DEFAULTS.carta;
 if(cartaConfig){
   if(cartaConfig.boton&&btnLetterText) btnLetterText.textContent=cartaConfig.boton;
   if(letterTitle) letterTitle.textContent=cartaConfig.titulo||'';
-  if(letterFooter) letterFooter.textContent=cartaConfig.firma||'';
+  if(letterFooter) letterFooter.innerHTML=(cartaConfig.firma||'').replace(/\n/g,'<br>');
   if(letterBody){
     if(Array.isArray(cartaConfig.parrafos)){
       letterBody.innerHTML=cartaConfig.parrafos.map(p=>`<p>${p}</p>`).join('');
