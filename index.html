@@ -318,36 +318,36 @@
 const DEFAULTS = {
   titulo: "Feliz Día de las Flores Amarillas 🌻",
   frases: [
-    "🌻 Eres de esas personas que iluminan sin darse cuenta",
-    "🌼 Contigo hasta lo más simple se vuelve especial",
-    "🌻 Coincidir contigo es de las cosas más lindas",
+    "🌻 Iluminas todo sin darte cuenta",
+    "🌼 Contigo hasta lo simple se vuelve especial",
+    "🌻 Coincidir contigo es de lo más lindo",
     "🌼 Tu sonrisa le hace bien a cualquier día",
-    "🌻 Hay personas que se sienten como un día soleado, como tú",
-    "🌼 Gracias por traer tanta calma y luz a mis días",
-    "🌻 No podía dejar pasar hoy sin recordarte cuánto importas",
-    "🌼 Contigo el tiempo siempre se pasa volando",
+    "🌻 Eres como un día soleado en mi vida",
+    "🌼 Gracias por traer tanta calma y luz",
+    "🌻 Quería recordarte lo mucho que importas",
+    "🌼 Contigo el tiempo se pasa volando",
     "🌻 Ojalá nunca olvides lo increíble que eres",
-    "🌼 Verte sonreír siempre vale la pena",
-    "🌻 Haces que todo sea un poquito más bonito con solo estar",
+    "🌼 Verte sonreír siempre alegra el día",
+    "🌻 Haces todo más bonito con solo estar",
     "🌼 Eres mi casualidad favorita",
-    "🌻 Tienes una magia especial que alegra donde vas",
+    "🌻 Tienes una magia especial en ti",
     "🌼 Me alegra tanto tenerte en mi vida",
     "🌻 El amarillo hoy no es por la fecha, es por ti",
-    "🌼 Por más risas y momentos bonitos contigo",
-    "🌻 Un detalle amarillo para alguien que brilla con luz propia",
-    "🌼 Para quien convierte cualquier día gris en soleado",
+    "🌼 Por más momentos bonitos contigo",
+    "🌻 Para alguien que brilla con luz propia",
+    "🌼 Conviertes cualquier día en un día soleado",
     "🌻 Que la vida te trate tan bonito como mereces",
     "🌼 Gracias por ser exactamente como eres",
-    "🌻 Guardé este girasol para la persona más linda",
+    "🌻 Guardé este girasol para ti",
     "🌼 Contigo los días tienen mucho más color",
-    "🌻 Qué bonita coincidencia haberte conocido",
-    "🌼 Cada momento a tu lado se guarda con cariño",
-    "🌻 Eres de esos lugares seguros a donde siempre da gusto volver",
-    "🌼 Que nunca te falte esa energía tan linda que tienes",
-    "🌻 Esta flor guarda un abrazo sincero para ti",
-    "🌼 Haces que todo se sienta más ligero y alegre",
-    "🌻 Hoy celebro tenerte cerca y poder compartir contigo",
-    "🌼 Para la persona que hace florecer todo a su alrededor"
+    "🌻 Qué linda coincidencia haberte conocido",
+    "🌼 Cada momento contigo se guarda con cariño",
+    "🌻 Ese lugar bonito al que da gusto volver",
+    "🌼 Que nunca te falte tu alegría contagiosa",
+    "🌻 Esta flor guarda un abrazo para ti",
+    "🌼 Haces que todo sea más ligero y alegre",
+    "🌻 Hoy celebro tenerte cerca",
+    "🌼 Haces florecer todo a tu alrededor"
   ],
   fotos: ["assets/img1.png","assets/img2.png","assets/img3.png"],
   musica: "assets/musica.mp3",
@@ -605,40 +605,45 @@ const frasesBase=(Array.isArray(CONFIG.frases)&&CONFIG.frases.length)?CONFIG.fra
 const WORD_SLOTS=150;
 const WORDS=Array.from({length:WORD_SLOTS},(_,i)=>frasesBase[i%frasesBase.length]);
 function makeTextTexture(text,color){
-  const c=document.createElement('canvas');c.width=512;c.height=128;
-  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillStyle='#fff';ctx.shadowColor=color;ctx.shadowBlur=30;
-  // Antes el tamaño de fuente era fijo (60px) sin importar el largo de la
-  // frase - una frase larga (con emoji, que ya de por si ocupa bastante
-  // ancho) se salia del lienzo de 512px y quedaba cortada a la mitad. Ahora
-  // el tamaño se reduce hasta que la frase completa entra, con un piso de
-  // 24px para que no se vuelva ilegible.
-  const maxWidth=c.width-48;
-  let fontSize=60;
+  // Medir el texto para darle el ancho exacto que necesita
+  const measureCanvas=document.createElement('canvas');
+  const mCtx=measureCanvas.getContext('2d');
+  const fontSize=46;
+  mCtx.font=fontSize+"px 'Indie Flower', cursive";
+  const measuredWidth=mCtx.measureText(text).width;
+
+  // Ancho con margen generoso para que el texto y su resplandor jamás se corten
+  const cWidth=Math.max(512,Math.ceil(measuredWidth+110));
+  const cHeight=128;
+
+  const c=document.createElement('canvas');
+  c.width=cWidth;
+  c.height=cHeight;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,cWidth,cHeight);
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillStyle='#fff';
+  ctx.shadowColor=color;
+  ctx.shadowBlur=28;
   ctx.font=fontSize+"px 'Indie Flower', cursive";
-  while(ctx.measureText(text).width>maxWidth&&fontSize>24){
-    fontSize-=2;
-    ctx.font=fontSize+"px 'Indie Flower', cursive";
-  }
-  ctx.fillText(text,c.width/2,c.height/2);
-  return new THREE.CanvasTexture(c);
+  ctx.fillText(text,cWidth/2,cHeight/2);
+
+  const tex=new THREE.CanvasTexture(c);
+  tex.userData={aspect:cWidth/cHeight};
+  return tex;
 }
 const COLORS=['#ffd700','#ffe066','#ffcc33','#ffb347','#fff2b0','#ffaa00','#f4c430','#e6b800','#ffdb58','#f0c419'];
 const textGroup=new THREE.Group();scene.add(textGroup);
-// Se espera a que 'Indie Flower' termine de cargar antes de dibujar las
-// frases en canvas - a diferencia del texto normal del DOM (el navegador ya
-// resuelve el "parpadeo" de fuente por su cuenta), un canvas dibuja con la
-// fuente que este disponible EN ESE INSTANTE: sin esto, las 150 frases
-// quedaban grabadas para siempre con la tipografia de respaldo (Arial) si
-// la fuente todavia no habia terminado de bajar en el momento exacto en que
-// corria este bucle.
-document.fonts.load("40px 'Indie Flower'").catch(()=>{}).then(()=>{
+// Se espera a que 'Indie Flower' termine de cargar antes de dibujar las frases en canvas
+document.fonts.load("46px 'Indie Flower'").catch(()=>{}).then(()=>{
   for(let i=0;i<WORDS.length;i++){
     const tex=makeTextTexture(WORDS[i],COLORS[i%COLORS.length]);
     const mat=new THREE.SpriteMaterial({map:tex,transparent:true});
     const sp=new THREE.Sprite(mat);
-    sp.scale.set(68,21.8,1);
+    const aspect=tex.userData&&tex.userData.aspect?tex.userData.aspect:4;
+    const h=20;
+    sp.scale.set(h*aspect,h,1);
     const phi=Math.acos(2*Math.random()-1);const theta=Math.random()*Math.PI*2;
     const r=150+Math.random()*120;
     sp.position.set(r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
