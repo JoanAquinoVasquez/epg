@@ -382,10 +382,142 @@ let targetDist=300,currentDist=300,rotX=0.2,rotY=0;
   scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.5,color:0xffffff,depthWrite:false})));
 })();
 
-// Núcleo tipo "agujero negro" (oscuro y opaco, para que el anillo resalte por contraste)
-const coreMat=new THREE.MeshPhongMaterial({color:0x030303,transparent:true,opacity:0.92,shininess:30});
+// ================= Iluminación =================
+const ambientLight=new THREE.AmbientLight(0xfff5d0,1.2);
+scene.add(ambientLight);
+
+const sunLight=new THREE.DirectionalLight(0xfffae6,2.0);
+sunLight.position.set(280,180,220);
+scene.add(sunLight);
+
+const coreLight=new THREE.PointLight(0xffd700,2.5,450);
+coreLight.position.set(0,0,0);
+scene.add(coreLight);
+
+// ================= Planeta Central Dorado =================
+function makePlanetTexture(w=1024,h=512){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  
+  // Base degradada atmosférica cálida
+  const grd=ctx.createLinearGradient(0,0,0,h);
+  grd.addColorStop(0.00,'#1c1003');
+  grd.addColorStop(0.18,'#4a2806');
+  grd.addColorStop(0.40,'#8a5209');
+  grd.addColorStop(0.55,'#d4920e');
+  grd.addColorStop(0.70,'#8a5209');
+  grd.addColorStop(0.88,'#4a2806');
+  grd.addColorStop(1.00,'#1c1003');
+  ctx.fillStyle=grd;ctx.fillRect(0,0,w,h);
+
+  // Bandas jovianas y corrientes gaseosas doradas
+  for(let y=0;y<h;y+=2){
+    const ny=y/h;
+    const wave=Math.sin(ny*Math.PI*16)+Math.sin(ny*Math.PI*32)*0.35;
+    const alpha=0.12+0.16*Math.sin(ny*Math.PI*5);
+    if(wave>0.3){
+      ctx.fillStyle=`rgba(255,225,90,${alpha*1.6})`;
+    }else if(wave<-0.25){
+      ctx.fillStyle=`rgba(180,105,10,${alpha*1.4})`;
+    }else{
+      ctx.fillStyle=`rgba(255,245,185,${alpha*0.9})`;
+    }
+    ctx.fillRect(0,y,w,2);
+  }
+
+  // Vórtices y remolinos de nubes luminosas
+  for(let i=0;i<70;i++){
+    const cx=Math.random()*w;
+    const cy=h*0.18+Math.random()*h*0.64;
+    const rx=35+Math.random()*100;
+    const ry=7+Math.random()*22;
+    const rg=ctx.createRadialGradient(cx,cy,2,cx,cy,rx);
+    rg.addColorStop(0,'rgba(255,240,160,0.5)');
+    rg.addColorStop(0.5,'rgba(255,190,40,0.22)');
+    rg.addColorStop(1,'rgba(255,140,0,0)');
+    ctx.fillStyle=rg;
+    ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.fill();
+  }
+
+  // Gran Vórtice Solar / Mancha Dorada
+  const spotX=w*0.62,spotY=h*0.58;
+  const spotGrad=ctx.createRadialGradient(spotX,spotY,4,spotX,spotY,75);
+  spotGrad.addColorStop(0,'rgba(255,255,235,0.9)');
+  spotGrad.addColorStop(0.35,'rgba(255,215,0,0.65)');
+  spotGrad.addColorStop(0.75,'rgba(218,140,10,0.3)');
+  spotGrad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=spotGrad;
+  ctx.beginPath();ctx.ellipse(spotX,spotY,80,40,-0.12,0,Math.PI*2);ctx.fill();
+
+  // Destellos estelares en la superficie
+  for(let i=0;i<240;i++){
+    const px=Math.random()*w,py=Math.random()*h,pr=Math.random()*1.8;
+    ctx.fillStyle=Math.random()>0.45?'rgba(255,255,255,0.65)':'rgba(255,220,50,0.75)';
+    ctx.beginPath();ctx.arc(px,py,pr,0,Math.PI*2);ctx.fill();
+  }
+
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=THREE.RepeatWrapping;
+  tex.wrapT=THREE.ClampToEdgeWrapping;
+  return tex;
+}
+
+function makePlanetBump(w=512,h=256){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#808080';ctx.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=4){
+    const wave=Math.sin(y/h*Math.PI*16)*35;
+    ctx.fillStyle=`rgb(${128+wave},${128+wave},${128+wave})`;
+    ctx.fillRect(0,y,w,4);
+  }
+  for(let i=0;i<45;i++){
+    const cx=Math.random()*w,cy=Math.random()*h,r=12+Math.random()*32;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,'#ffffff');g.addColorStop(1,'#808080');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+const planetTex=makePlanetTexture();
+const planetBump=makePlanetBump();
+const coreMat=new THREE.MeshStandardMaterial({
+  map:planetTex,
+  bumpMap:planetBump,
+  bumpScale:1.6,
+  roughness:0.38,
+  metalness:0.28,
+  emissive:0x4a2a00,
+  emissiveMap:planetTex,
+  emissiveIntensity:0.55
+});
 const core=new THREE.Mesh(new THREE.SphereGeometry(40,64,64),coreMat);
 scene.add(core);
+
+// Atmósfera de resplandor luminiscente (Fresnel rim glow)
+const atmoMat=new THREE.ShaderMaterial({
+  vertexShader:`
+    varying vec3 vNormal;
+    void main(){
+      vNormal=normalize(normalMatrix*normal);
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }
+  `,
+  fragmentShader:`
+    varying vec3 vNormal;
+    void main(){
+      float intensity=pow(0.66-dot(vNormal,vec3(0,0,1.0)),2.2);
+      gl_FragColor=vec4(1.0,0.88,0.40,1.0)*intensity*1.8;
+    }
+  `,
+  blending:THREE.AdditiveBlending,
+  side:THREE.BackSide,
+  transparent:true,
+  depthWrite:false
+});
+const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(42.5,64,64),atmoMat);
+scene.add(atmosphere);
 
 // El título ahora vive en la cabecera fija (#main-title, ver DEDICA:CONFIG
 // mas arriba) en vez de un sprite 3D en el centro - mas legible y
@@ -567,8 +699,13 @@ let t=0;
 function tick(){requestAnimationFrame(tick);t+=0.01;
   ring.rotation.z+=0.003;
   glow.scale.set(GLOW_BASE*(1+Math.sin(t*0.4)*0.03),GLOW_BASE*(1+Math.sin(t*0.4)*0.03),1);
-  const s=1.0+0.05*Math.sin(t*3); // latido
+  const s=1.0+0.025*Math.sin(t*2.4); // respiración suave
   core.scale.set(s,s,s);
+  core.rotation.y+=0.0022; // rotación del planeta sobre su eje
+  if(typeof atmosphere!=='undefined'){
+    atmosphere.scale.set(s,s,s);
+    atmosphere.rotation.y+=0.003; // rotación atmosférica
+  }
   textGroup.children.forEach(sp=>{
     sp.material.opacity=0.8+0.2*Math.sin(t*2);
     sp.userData.theta+=sp.userData.speed;
